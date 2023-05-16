@@ -415,7 +415,7 @@ namespace dxvk {
       m_device->submitCommandList(cCommandList, nullptr);
 
       if (cHud != nullptr && !cFrameId)
-        cHud->update();
+        cHud->update(m_vsync);
 
       m_device->presentImage(m_presenter, &m_presentStatus);
     });

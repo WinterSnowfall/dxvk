@@ -14,6 +14,9 @@ namespace dxvk::hud {
     // Do nothing by default. Some items won't need this.
   }
 
+  void HudItem::update(bool vsync) {
+    // Do nothing by default. Some items won't need this.
+  }
 
   HudItemSet::HudItemSet(const Rc<DxvkDevice>& device) {
     std::string configStr = env::getEnvVar("DXVK_HUD");
@@ -58,11 +61,13 @@ namespace dxvk::hud {
   }
 
 
-  void HudItemSet::update() {
+  void HudItemSet::update(bool vsync) {
     auto time = dxvk::high_resolution_clock::now();
 
-    for (const auto& item : m_items)
+    for (const auto& item : m_items) {
       item->update(time);
+      item->update(vsync);
+    }
   }
 
 
@@ -206,6 +211,41 @@ namespace dxvk::hud {
       { position.x + 60.0f, position.y },
       { 1.0f, 1.0f, 1.0f, 1.0f },
       m_frameRate);
+
+    position.y += 8.0f;
+    return position;
+  }
+
+  
+  HudVSyncItem::HudVSyncItem() { }
+  HudVSyncItem::~HudVSyncItem() { }
+
+  void HudVSyncItem::update(bool vsync) {
+    m_vsync = vsync;
+  }
+
+  HudPos HudVSyncItem::render(
+          HudRenderer&      renderer,
+          HudPos            position) {
+    position.y += 16.0f;
+
+    std::string vsync_state = "On";
+    HudColor color = { 0.0f, 1.0f, 0.0f, 1.0f }; //green
+
+    if(!m_vsync) {
+      vsync_state = "Off";
+      color = { 1.0f, 0.12f, 0.15f, 1.0f }; //red
+    }
+
+    renderer.drawText(16.0f,
+      { position.x, position.y },
+      { 1.0f, 0.25f, 0.25f, 1.0f },
+      "VSync: ");
+
+    renderer.drawText(16.0f,
+      { position.x + 80.0f, position.y },
+      color,
+      vsync_state);
 
     position.y += 8.0f;
     return position;

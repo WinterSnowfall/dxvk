@@ -31,6 +31,13 @@ namespace dxvk::hud {
             dxvk::high_resolution_clock::time_point time);
 
     /**
+     * \brief Updates the HUD item
+     * \param [in] vsync current swapchain VSync
+     */
+    virtual void update(
+            bool vsync);
+
+    /**
      * \brief Renders the HUD
      *
      * \param [in] renderer HUD renderer
@@ -61,7 +68,7 @@ namespace dxvk::hud {
      * \brief Updates the HUD
      * Updates all enabled HUD items.
      */
-    void update();
+    void update(bool vsync);
 
     /**
      * \brief Renders the HUD
@@ -177,6 +184,28 @@ namespace dxvk::hud {
     std::string m_deviceName;
     std::string m_driverName;
     std::string m_driverVer;
+
+  };
+  
+  /**
+   * \brief HUD item to display the VSync status
+   */
+  class HudVSyncItem : public HudItem {
+  public:
+
+    HudVSyncItem();
+
+    ~HudVSyncItem();
+
+    void update(bool vsync);
+
+    HudPos render(
+            HudRenderer&      renderer,
+            HudPos            position);
+
+  private:
+
+    bool  m_vsync;
 
   };
 

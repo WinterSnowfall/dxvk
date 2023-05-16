@@ -38,6 +38,7 @@ namespace dxvk::hud {
 
     addItem<HudVersionItem>("version", -1);
     addItem<HudDeviceInfoItem>("devinfo", -1, m_device);
+    addItem<HudVSyncItem>("vsync", -1);
     addItem<HudFpsItem>("fps", -1);
     addItem<HudFrameTimeItem>("frametimes", -1);
     addItem<HudSubmissionStatsItem>("submissions", -1, device);
@@ -56,8 +57,8 @@ namespace dxvk::hud {
   }
   
   
-  void Hud::update() {
-    m_hudItems.update();
+  void Hud::update(bool vsync) {
+    m_hudItems.update(vsync);
   }
   
   
