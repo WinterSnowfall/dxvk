@@ -211,8 +211,6 @@ namespace dxvk {
 
   HRESULT STDMETHODCALLTYPE D3D8Device::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
     StateChange();
-    // Resetting implicitly ends scenes started by BeginScene
-    GetD3D9()->EndScene();
 
     d3d9::D3DPRESENT_PARAMETERS params = ConvertPresentParameters9(pPresentationParameters);
     HRESULT res = GetD3D9()->Reset(&params);
