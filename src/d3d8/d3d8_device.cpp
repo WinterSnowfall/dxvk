@@ -52,6 +52,7 @@ namespace dxvk {
     }
 
     m_bridge->SetAPIName("D3D8");
+    m_bridge->SetD3D8CompatibilityMode(true);
 
     ResetState();
     RecreateBackBuffersAndAutoDepthStencil();
