@@ -110,6 +110,8 @@ namespace dxvk {
     // Ensure GPU hiding only gets logged once per adapter
     bool                          m_notifyHidingGpu = true;
 
+    std::vector<uint32_t>         m_forcedModeHeights;
+
   };
 
 }
