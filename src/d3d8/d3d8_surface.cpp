@@ -21,7 +21,7 @@ namespace dxvk {
   }
 
   D3DRESOURCETYPE STDMETHODCALLTYPE D3D8Surface::GetType() {
-    return D3DRESOURCETYPE(GetD3D9()->GetType());
+    return D3DRTYPE_SURFACE;
   }
 
   HRESULT STDMETHODCALLTYPE D3D8Surface::GetDesc(D3DSURFACE_DESC* pDesc) {
@@ -46,14 +46,6 @@ namespace dxvk {
 
   HRESULT STDMETHODCALLTYPE D3D8Surface::UnlockRect() {
     return GetD3D9()->UnlockRect();
-  }
-
-  HRESULT STDMETHODCALLTYPE D3D8Surface::GetDC(HDC* phDC) {
-    return GetD3D9()->GetDC(phDC);
-  }
-
-  HRESULT STDMETHODCALLTYPE D3D8Surface::ReleaseDC(HDC hDC) {
-    return GetD3D9()->ReleaseDC(hDC);
   }
 
   // TODO: Consider creating only one texture to
