@@ -75,6 +75,9 @@ namespace dxvk {
     this->allowDirectBufferMapping      = config.getOption<bool>        ("d3d9.allowDirectBufferMapping",      true);
     this->seamlessCubes                 = config.getOption<bool>        ("d3d9.seamlessCubes",                 false);
 
+    // D3D8 options
+    this->drefScaling                   = config.getOption<int32_t>     ("d3d8.scaleDref",                     0);
+
     // If we are not Nvidia, enable general hazards.
     this->generalHazards = adapter != nullptr
                         && !adapter->matchesDriver(

@@ -15,6 +15,7 @@ namespace dxvk {
 
   D3D9FixedFunctionOptions::D3D9FixedFunctionOptions(const D3D9Options* options) {
     invariantPosition = options->invariantPosition;
+    drefScaling = options->drefScaling;
   }
 
   uint32_t DoFixedFunctionFog(SpirvModule& spvModule, const D3D9FogContext& fogCtx) {
@@ -1598,6 +1599,11 @@ namespace dxvk {
         return coords;
       };
 
+      auto ScalarReplicate = [&](uint32_t reg) {
+        std::array<uint32_t, 4> replicant = { reg, reg, reg, reg };
+        return m_module.opCompositeConstruct(m_vec4Type, replicant.size(), replicant.data());
+      };
+
       auto GetTexture = [&]() {
         if (!processedTexture) {
           SpirvImageOperands imageOperands;
@@ -1617,21 +1623,16 @@ namespace dxvk {
           texcoord = m_module.opVectorShuffle(texcoord_t,
             texcoord, texcoord, texcoordCnt, indices.data());
 
-          uint32_t projIdx = m_fsKey.Stages[i].Contents.ProjectedCount;
-          if (projIdx == 0)
-            projIdx = texcoordCnt;
-          else
-            projIdx--;
-
+          bool shouldProject = m_fsKey.Stages[i].Contents.Projected;
           uint32_t projValue = 0;
 
-          if (m_fsKey.Stages[i].Contents.Projected) {
+          if (shouldProject) {
+            // Always use w, the vertex shader puts the correct value there.
+            const uint32_t projIdx = 3;
             projValue = m_module.opCompositeExtract(m_floatType, m_ps.in.TEXCOORD[i], 1, &projIdx);
             uint32_t insertIdx = texcoordCnt - 1;
             texcoord = m_module.opCompositeInsert(texcoord_t, projValue, texcoord, 1, &insertIdx);
           }
-
-          bool shouldProject = m_fsKey.Stages[i].Contents.Projected;
 
           if (i != 0 && (
             m_fsKey.Stages[i - 1].Contents.ColorOp == D3DTOP_BUMPENVMAP ||
@@ -1646,10 +1647,23 @@ namespace dxvk {
             shouldProject = false;
           }
 
-          if (shouldProject)
+          if (unlikely(stage.SampleDref)) {
+            uint32_t component = 2;
+            uint32_t reference = m_module.opCompositeExtract(m_floatType, texcoord, 1, &component);
+
+            // [D3D8] Scale Dref to [0..(2^N - 1)] for D24S8 and D16 if Dref scaling is enabled
+            if (m_options.drefScaling) {
+              uint32_t maxDref = m_module.constf32(1.0f / (float(1 << m_options.drefScaling) - 1.0f));
+              reference        = m_module.opFMul(m_floatType, reference, maxDref);
+            }
+
+            texture = m_module.opImageSampleDrefImplicitLod(m_floatType, imageVarId, texcoord, reference, imageOperands);
+            texture = ScalarReplicate(texture);
+          } else if (shouldProject) {
             texture = m_module.opImageSampleProjImplicitLod(m_vec4Type, imageVarId, texcoord, imageOperands);
-          else
+          } else {
             texture = m_module.opImageSampleImplicitLod(m_vec4Type, imageVarId, texcoord, imageOperands);
+          }
 
           if (i != 0 && m_fsKey.Stages[i - 1].Contents.ColorOp == D3DTOP_BUMPENVMAPLUMINANCE) {
             uint32_t index = m_module.constu32(D3D9SharedPSStages_Count * (i - 1) + D3D9SharedPSStages_BumpEnvLScale);
@@ -1681,11 +1695,6 @@ namespace dxvk {
         processedTexture = true;
 
         return texture;
-      };
-
-      auto ScalarReplicate = [&](uint32_t reg) {
-        std::array<uint32_t, 4> replicant = { reg, reg, reg, reg };
-        return m_module.opCompositeConstruct(m_vec4Type, replicant.size(), replicant.data());
       };
 
       auto AlphaReplicate = [&](uint32_t reg) {
@@ -2076,6 +2085,11 @@ namespace dxvk {
           dimensionality = spv::Dim2D;
           sampler.texcoordCnt = 2;
           viewType       = VK_IMAGE_VIEW_TYPE_2D;
+
+          // Z coordinate for Dref sampling
+          if (m_fsKey.Stages[i].Contents.SampleDref)
+            sampler.texcoordCnt++;
+
           break;
         case D3DRTYPE_CUBETEXTURE:
           dimensionality = spv::DimCube;

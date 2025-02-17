@@ -2970,9 +2970,16 @@ void DxsoCompiler::emitControlFlowGenericLoop(
       uint32_t reference = 0;
 
       if (depth) {
+        uint32_t fType = m_module.defFloatType(32);
         uint32_t component = sampler.dimensions;
         reference = m_module.opCompositeExtract(
-          m_module.defFloatType(32), texcoordVar.id, 1, &component);
+          fType, texcoordVar.id, 1, &component);
+
+        // [D3D8] Scale Dref from [0..(2^N - 1)] for D24S8 and D16 if Dref scaling is enabled
+        if (m_moduleInfo.options.drefScaling) {
+          uint32_t drefScale       = m_module.constf32(GetDrefScaleFactor(m_moduleInfo.options.drefScaling));
+          reference                = m_module.opFMul(fType, reference, drefScale);
+        }
       }
 
       if (projDivider != 0) {

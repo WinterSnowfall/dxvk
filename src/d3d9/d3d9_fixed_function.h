@@ -39,8 +39,13 @@ namespace dxvk {
   struct D3D9FixedFunctionOptions {
     D3D9FixedFunctionOptions(const D3D9Options* options);
 
-    bool invariantPosition;
+    bool    invariantPosition;
+    int32_t drefScaling;
   };
+
+  constexpr float GetDrefScaleFactor(int32_t bitDepth) {
+    return 1.0f / (float(1 << bitDepth) - 1.0f);
+  }
 
   // Returns new oFog if VS
   // Returns new oColor if PS
@@ -149,6 +154,7 @@ namespace dxvk {
         uint32_t     Projected    : 1;
 
         uint32_t     ProjectedCount : 3;
+        uint32_t     SampleDref     : 1;
 
         // Included in here, read from Stage 0 for packing reasons
         // Affects all stages.

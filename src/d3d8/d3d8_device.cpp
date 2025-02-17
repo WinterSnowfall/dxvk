@@ -287,7 +287,7 @@ namespace dxvk {
       HRESULT res = GetD3D9()->GetBackBuffer(0, iBackBuffer, (d3d9::D3DBACKBUFFER_TYPE)Type, &pSurface9);
 
       if (likely(SUCCEEDED(res))) {
-        m_backBuffers[iBackBuffer] = new D3D8Surface(this, std::move(pSurface9));
+        m_backBuffers[iBackBuffer] = new D3D8Surface(this, D3DPOOL_DEFAULT, std::move(pSurface9));
         *ppBackBuffer = m_backBuffers[iBackBuffer].ref();
       }
 
@@ -347,7 +347,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppTexture = ref(new D3D8Texture2D(this, std::move(pTex9)));
+      *ppTexture = ref(new D3D8Texture2D(this, Pool, std::move(pTex9)));
 
     return res;
   }
@@ -381,7 +381,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppVolumeTexture = ref(new D3D8Texture3D(this, std::move(pVolume9)));
+      *ppVolumeTexture = ref(new D3D8Texture3D(this, Pool, std::move(pVolume9)));
 
     return res;
   }
@@ -414,7 +414,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppCubeTexture = ref(new D3D8TextureCube(this, std::move(pCube9)));
+      *ppCubeTexture = ref(new D3D8TextureCube(this, Pool, std::move(pCube9)));
 
     return res;
   }
@@ -493,7 +493,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppSurface = ref(new D3D8Surface(this, std::move(pSurf9)));
+      *ppSurface = ref(new D3D8Surface(this, D3DPOOL_DEFAULT, std::move(pSurf9)));
 
     return res;
   }
@@ -526,7 +526,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppSurface = ref(new D3D8Surface(this, std::move(pSurf9)));
+      *ppSurface = ref(new D3D8Surface(this, D3DPOOL_DEFAULT, std::move(pSurf9)));
 
     return res;
   }
@@ -558,7 +558,7 @@ namespace dxvk {
       NULL);
 
     if (likely(SUCCEEDED(res)))
-      *ppSurface = ref(new D3D8Surface(this, std::move(pSurf)));
+      *ppSurface = ref(new D3D8Surface(this, pool, std::move(pSurf)));
 
     return res;
   }
@@ -1064,7 +1064,7 @@ namespace dxvk {
       HRESULT res = GetD3D9()->GetRenderTarget(0, &pRT9); // use RT index 0
 
       if (likely(SUCCEEDED(res))) {
-        m_renderTarget = new D3D8Surface(this, std::move(pRT9));
+        m_renderTarget = new D3D8Surface(this, D3DPOOL_DEFAULT, std::move(pRT9));
         *ppRenderTarget = m_renderTarget.ref();
       }
 
@@ -1088,7 +1088,7 @@ namespace dxvk {
       HRESULT res = GetD3D9()->GetDepthStencilSurface(&pStencil9);
 
       if (likely(SUCCEEDED(res))) {
-        m_depthStencil = new D3D8Surface(this, std::move(pStencil9));
+        m_depthStencil = new D3D8Surface(this, D3DPOOL_DEFAULT, std::move(pStencil9));
         *ppZStencilSurface = m_depthStencil.ref();
       }
 
@@ -1368,6 +1368,27 @@ namespace dxvk {
 
     D3D8Texture2D* tex = static_cast<D3D8Texture2D*>(pTexture);
 
+    // Splinter Cell: Force perspective divide when a shadow map is bound to slot 0
+    if (unlikely(m_d3d8Options.shadowPerspectiveDivide && Stage == 0)) {
+      if (tex) {
+        D3DSURFACE_DESC surf;
+        tex->GetLevelDesc(0, &surf);
+        if (isDepthStencilFormat(surf.Format)) {
+          // If we bound a depth texture to stage 0 then we need to set the projected flag for stage 0 and 1
+          // Stage 1 is a non-depth light cookie texture but still requires perspective divide to work
+          GetD3D9()->SetTextureStageState(0, d3d9::D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_PROJECTED);
+          GetD3D9()->SetTextureStageState(1, d3d9::D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_PROJECTED);
+          m_shadowPerspectiveDivide = true;
+        } else if (m_shadowPerspectiveDivide) {
+          // Non-depth texture bound. Game will reset the transform flags to 0 on its own
+          m_shadowPerspectiveDivide = false;
+        }
+      } else if (m_shadowPerspectiveDivide) {
+        // Texture unbound. Game will reset the transform flags to 0 on its own
+        m_shadowPerspectiveDivide = false;
+      }
+    }
+
     if (unlikely(m_textures[Stage] == tex))
       return D3D_OK;
 
@@ -1400,6 +1421,13 @@ namespace dxvk {
           D3DTEXTURESTAGESTATETYPE Type,
           DWORD                    Value) {
     d3d9::D3DSAMPLERSTATETYPE stateType = GetSamplerStateType9(Type);
+
+    if (unlikely(m_d3d8Options.shadowPerspectiveDivide && Type == D3DTSS_TEXTURETRANSFORMFLAGS)) {
+      // Splinter Cell: Ignore requests to change texture transform flags
+      // to 0 while shadow mapping perspective divide mode is enabled
+      if (m_shadowPerspectiveDivide && (Stage == 0 || Stage == 1))
+        return D3D_OK;
+    }
 
     StateChange();
     if (stateType != -1u) {
@@ -1453,7 +1481,7 @@ namespace dxvk {
 
     return GetD3D9()->DrawIndexedPrimitive(
       d3d9::D3DPRIMITIVETYPE(PrimitiveType),
-      static_cast<INT>(std::min(m_baseVertexIndex, static_cast<UINT>(INT_MAX))), // set by SetIndices
+      static_cast<INT>(std::min(m_baseVertexIndex, static_cast<UINT>(std::numeric_limits<int32_t>::max()))), // set by SetIndices
       MinVertexIndex,
       NumVertices,
       StartIndex,
@@ -1593,7 +1621,7 @@ namespace dxvk {
     if (unlikely(ShouldRecord()))
       return m_recorder->SetIndices(pIndexData, BaseVertexIndex);
 
-    if (unlikely(BaseVertexIndex > INT_MAX))
+    if (unlikely(BaseVertexIndex > std::numeric_limits<int32_t>::max()))
       Logger::warn("D3D8Device::SetIndices: BaseVertexIndex exceeds INT_MAX");
 
     // used by DrawIndexedPrimitive

@@ -160,6 +160,9 @@ namespace dxvk {
 
     /// Don't use non seamless cube maps
     bool seamlessCubes;
+
+    /// Enable depth texcoord Z (Dref) scaling (D3D8 quirk)
+    int32_t drefScaling;
   };
 
 }
