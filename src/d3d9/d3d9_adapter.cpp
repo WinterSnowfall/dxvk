@@ -806,6 +806,11 @@ namespace dxvk {
   }
 
 
+  bool D3D9Adapter::IsD3D8Compatible() const {
+    return m_parent->IsD3D8Compatible();
+  }
+
+
   HRESULT D3D9Adapter::CheckDeviceVkFormat(
           VkFormat        Format,
           DWORD           Usage,

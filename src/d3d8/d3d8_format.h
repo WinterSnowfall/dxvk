@@ -16,28 +16,6 @@ namespace dxvk {
     return isDXT(D3DFORMAT(fmt));
   }
 
-  constexpr bool isUnsupportedSurfaceFormat(D3DFORMAT fmt) {
-    // mirror what dxvk doesn't support in terms of d3d9 surface formats
-    return fmt == D3DFMT_R8G8B8
-        || fmt == D3DFMT_R3G3B2
-        || fmt == D3DFMT_A8R3G3B2
-        || fmt == D3DFMT_A8P8
-        || fmt == D3DFMT_P8;
-        // not included in the d3d8 spec
-        //|| fmt == D3DFMT_CXV8U8;
-  }
-
-  constexpr bool isSupportedDepthStencilFormat(D3DFORMAT fmt) {
-    // native d3d8 doesn't support D3DFMT_D32, D3DFMT_D15S1 or D3DFMT_D24X4S4
-    return fmt == D3DFMT_D16_LOCKABLE
-        || fmt == D3DFMT_D16
-        //|| fmt == D3DFMT_D32
-        //|| fmt == D3DFMT_D15S1
-        //|| fmt == D3DFMT_D24X4S4
-        || fmt == D3DFMT_D24S8
-        || fmt == D3DFMT_D24X8;
-  }
-
   constexpr bool isDepthStencilFormat(D3DFORMAT fmt) {
     return fmt == D3DFMT_D16_LOCKABLE
         || fmt == D3DFMT_D16
@@ -46,6 +24,22 @@ namespace dxvk {
         || fmt == D3DFMT_D24X4S4
         || fmt == D3DFMT_D24S8
         || fmt == D3DFMT_D24X8;
+  }
+
+  // Some games will query all formats in the 0-100 range, so filter
+  // out some formats possibly supported by d3d9, but unknown to d3d8
+  constexpr bool isD3D9ExclusiveFormat(D3DFORMAT fmt) {
+    const d3d9::D3DFORMAT d3d9Fmt = d3d9::D3DFORMAT(fmt);
+
+    return d3d9Fmt == d3d9::D3DFMT_A8B8G8R8      //32
+        || d3d9Fmt == d3d9::D3DFMT_X8B8G8R8      //33
+        || d3d9Fmt == d3d9::D3DFMT_A2R10G10B10   //35
+        || d3d9Fmt == d3d9::D3DFMT_A16B16G16R16  //36
+        || d3d9Fmt == d3d9::D3DFMT_L16           //81
+        || d3d9Fmt == d3d9::D3DFMT_D32F_LOCKABLE //82
+        || d3d9Fmt == d3d9::D3DFMT_D24FS8        //83
+        || d3d9Fmt == d3d9::D3DFMT_D32_LOCKABLE  //84
+        || d3d9Fmt == d3d9::D3DFMT_S8_LOCKABLE;  //85
   }
 
   // Get bytes per pixel (or 4x4 block for DXT)
@@ -81,8 +75,6 @@ namespace dxvk {
       case D3DFMT_A8R8G8B8:
       case D3DFMT_X8R8G8B8:
       case D3DFMT_A2B10G10R10:
-      //case D3DFMT_A8B8G8R8:
-      //case D3DFMT_X8B8G8R8:
       case D3DFMT_G16R16:
       case D3DFMT_X8L8V8U8:
       case D3DFMT_Q8W8V8U8:

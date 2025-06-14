@@ -91,6 +91,8 @@ namespace dxvk {
       return m_d3d9Formats.GetUnsupportedFormatInfo(Format);
     }
 
+    bool IsD3D8Compatible() const;
+
   private:
 
     HRESULT CheckDeviceVkFormat(
