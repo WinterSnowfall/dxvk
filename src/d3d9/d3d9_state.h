@@ -292,6 +292,11 @@ namespace dxvk {
       std::array<DWORD, TextureStageStateCount>,
       caps::TextureStageCount>>                         textureStages = {};
 
+    std::unordered_map<
+       UINT,
+       std::array<PALETTEENTRY, 256>>                   texturePalettes;
+    UINT                                                texturePaletteNumber = 0u;
+
     ItemType<D3D9ShaderConstantsVSSoftware>             vsConsts;
     ItemType<D3D9ShaderConstantsPS>                     psConsts;
 
