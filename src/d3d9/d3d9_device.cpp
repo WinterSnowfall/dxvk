@@ -2937,12 +2937,18 @@ namespace dxvk {
 
 
   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::SetNPatchMode(float nSegments) {
+    auto lock = LockDevice();
+
+    m_state.nPatchSegments = nSegments;
+
     return D3D_OK;
   }
 
 
   float   STDMETHODCALLTYPE D3D9DeviceEx::GetNPatchMode() {
-    return 0.0f;
+    auto lock = LockDevice();
+
+    return m_state.nPatchSegments;
   }
 
 
