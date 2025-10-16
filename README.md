@@ -1,6 +1,6 @@
 # DXVK
 
-A Vulkan-based translation layer for Direct3D 8/9/10/11 which allows running 3D applications on Linux using Wine.
+A Vulkan-based translation layer for Direct3D 7/8/9/10/11 which allows running 3D applications on Linux using Wine.
 
 For the current status of the project, please refer to the [project wiki](https://github.com/doitsujin/dxvk/wiki).
 
@@ -9,7 +9,7 @@ The most recent development builds can be found [here](https://github.com/doitsu
 Release builds can be found [here](https://github.com/doitsujin/dxvk/releases).
 
 ## How to use
-In order to install a DXVK package obtained from the [release](https://github.com/doitsujin/dxvk/releases) page into a given wine prefix, copy or symlink the DLLs into the following directories as follows, then open `winecfg` and manually add `native` DLL overrides for `d3d8`, `d3d9`, `d3d10core`, `d3d11` and `dxgi` under the Libraries tab.
+In order to install a DXVK package obtained from the [release](https://github.com/doitsujin/dxvk/releases) page into a given wine prefix, copy or symlink the DLLs into the following directories as follows, then open `winecfg` and manually add `native` DLL overrides for `ddraw`, `d3d8`, `d3d9`, `d3d10core`, `d3d11` and `dxgi` under the Libraries tab.
 
 In a default Wine prefix that would be as follows:
 ```
@@ -35,6 +35,7 @@ Tools such as Steam Play, Lutris, Bottles, Heroic Launcher, etc will automatical
 #### DLL dependencies 
 Listed below are the DLL requirements for using DXVK with any single API.
 
+- d3d7: `ddraw.dll` and `d3d9.dll`
 - d3d8: `d3d8.dll` and `d3d9.dll`
 - d3d9: `d3d9.dll`
 - d3d10: `d3d10core.dll`, `d3d11.dll` and `dxgi.dll`
@@ -143,7 +144,7 @@ cd build.w64
 ninja install
 ```
 
-The D3D8, D3D9, D3D10, D3D11 and DXGI DLLs will be located in `/your/dxvk/directory/bin`.
+The D3D7, D3D8, D3D9, D3D10, D3D11 and DXGI DLLs will be located in `/your/dxvk/directory/bin`.
 
 ### Build troubleshooting
 DXVK requires threading support from your mingw-w64 build environment. If you
